@@ -35,7 +35,12 @@ public class Assignment2 {
      */
     public boolean connectDB(String URL, String username, String password) {
         // Replace this return statement with an implementation of this method!
-        return false;
+        try {
+            connection = DriverManager.getConnection(url, username, password);
+        } catch (Exception e){
+            return false;
+        }   
+        return true;
     }
 
     /**
@@ -45,7 +50,12 @@ public class Assignment2 {
      */
     public boolean disconnectDB() {
         // Replace this return statement with an implementation of this method!
-        return false;
+        try {
+            connection.close();
+        } catch (Exception e){
+            return false;
+        }   
+        return true;
     }
 
     /**

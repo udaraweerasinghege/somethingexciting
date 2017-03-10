@@ -1,5 +1,3 @@
-package p2;
-
 import java.sql.*;
 
 //Remember that part of your mark is for doing as much in SQL (not Java)

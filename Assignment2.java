@@ -36,7 +36,7 @@ public class Assignment2 {
     public boolean connectDB(String URL, String username, String password) {
         // Replace this return statement with an implementation of this method!
         try {
-            connection = DriverManager.getConnection(url, username, password);
+            connection = DriverManager.getConnection(URL, username, password);
         } catch (Exception e){
             return false;
         }
@@ -92,11 +92,11 @@ public class Assignment2 {
             return false;
           }
           String grader_status = rs.getString("markususer.type");
-          else if (grader_status != "TA"){
+          if (grader_status != "TA"){
             return false;
           }
           Statement statement = conn.createStatement();
-          statement.executeUpdate("INSERT INTO grader VALUES (" + groupID "," + grader + ")");
+          statement.executeUpdate("INSERT INTO grader " + "VALUES (" + groupID + "," + grader + ")");
           return true;
 
         }
@@ -179,12 +179,13 @@ public class Assignment2 {
 
     public static void main(String[] args) {
         // You can put testing code in here. It will not affect our autotester.
-        String url = "jdbc:postgresql://localhost:5432/csc343h-chenji13";
+        Assignment2 a2 = new Assignment2();
+	String url = "jdbc:postgresql://localhost:5432/csc343h-chenji13";
         String username = "chenji13";
         String password = "";
-        connectDB(URL, username, password);
-        assignGrader(2000, "t1");
-        disconnectDB();
+        a2.connectDB(url, username, password);
+        a2.assignGrader(2000, "t1");
+        a2.disconnectDB();
         System.out.println("Boo!");
     }
 }

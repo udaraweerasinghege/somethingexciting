@@ -83,7 +83,8 @@ public class Assignment2 {
      pStatement = connection.prepareStatement(queryString);
      pStatement.execute();
 
-     queryString = "select * from assignmentgroup join grader on assignmentgroup.group_id = grader.group_id join markususer on markususer.username = grader.username where grader.group_id = " + groupID;
+     queryString = "select assignmentgroup.group_id, assignment_id, repo, grader.username, markususer.type from assignmentgroup left join grader on assignmentgroup.group_id = grader.group_id right join markususer on markususer.username = grader.username where grader.group_id = " + groupID;
+
      PreparedStatement ps = connection.prepareStatement(queryString);
      rs = ps.executeQuery();
 

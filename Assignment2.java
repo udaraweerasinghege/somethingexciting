@@ -1,6 +1,6 @@
 import java.sql.*;
 
-// Remember that part of your mark is for doing as much in SQL (not Java) 
+// Remember that part of your mark is for doing as much in SQL (not Java)
 // as you can. At most you can justify using an array, or the more flexible
 // ArrayList. Don't go crazy with it, though. You need it rarely if at all.
 import java.util.ArrayList;
@@ -20,11 +20,11 @@ public class Assignment2 {
 
     /**
      * Connects to the database and sets the search path.
-     * 
+     *
      * Establishes a connection to be used for this session, assigning it to the
      * instance variable 'connection'. In addition, sets the search path to
      * markus.
-     * 
+     *
      * @param url
      *            the url for the database
      * @param username
@@ -39,13 +39,13 @@ public class Assignment2 {
             connection = DriverManager.getConnection(url, username, password);
         } catch (Exception e){
             return false;
-        }   
+        }
         return true;
     }
 
     /**
      * Closes the database connection.
-     * 
+     *
      * @return true if the closing was successful, false otherwise
      */
     public boolean disconnectDB() {
@@ -54,17 +54,17 @@ public class Assignment2 {
             connection.close();
         } catch (Exception e){
             return false;
-        }   
+        }
         return true;
     }
 
     /**
      * Assigns a grader for a group for an assignment.
-     * 
+     *
      * Returns false if the groupID does not exist in the AssignmentGroup table,
      * if some grader has already been assigned to the group, or if grader is
      * not either a TA or instructor.
-     * 
+     *
      * @param groupID
      *            id of the group
      * @param grader
@@ -73,21 +73,50 @@ public class Assignment2 {
      */
     public boolean assignGrader(int groupID, String grader) {
         // Replace this return statement with an implementation of this method!
-        return false;
+        Connection conn;
+        PreparedStatement pStatement;
+        ResultSet rs;
+        String queryString;
+
+        queryString = "SET search_path TO markus";
+        pStatement = conn.prepareStatement(queryString);
+        pStatement.execute();
+
+        queryString = "select * from assignmentgroup join grader on assignmentgroup.group_id = grader.group_id join markususer on markususer.username = grader.username where grader.group_id = " + groupID;
+        PreparedStatement ps = conn.prepareStatement(queryString);
+        rs = ps.executeQuery();
+
+        if (rs.next()){
+          String current_grader = rs.getString("grader.username");
+          if (current_grader != grader){
+            return false;
+          }
+          String grader_status = rs.getString("markususer.type");
+          else if (grader_status != "TA"){
+            return false;
+          }
+          Statement statement = conn.createStatement();
+          statement.executeUpdate("INSERT INTO grader VALUES (" + groupID "," + grader + ")");
+          return true;
+
+        }
+        else {
+          return false;
+        }
     }
 
     /**
      * Adds a member to a group for an assignment.
-     * 
+     *
      * Records the fact that a new member is part of a group for an assignment.
      * Does nothing (but returns true) if the member is already declared to be
      * in the group.
-     * 
+     *
      * Does nothing and returns false if any of these conditions hold: - the
      * group is already at capacity, - newMember is not a valid username or is
      * not a student, - there is no assignment with this assignment ID, or - the
      * group ID has not been declared for the assignment.
-     * 
+     *
      * @param assignmentID
      *            id of the assignment
      * @param groupID
@@ -103,35 +132,35 @@ public class Assignment2 {
 
     /**
      * Creates student groups for an assignment.
-     * 
+     *
      * Finds all students who are defined in the Users table and puts each of
      * them into a group for the assignment. Suppose there are n. Each group
      * will be of the maximum size allowed for the assignment (call that k),
      * except for possibly one group of smaller size if n is not divisible by k.
      * Note that k may be as low as 1.
-     * 
+     *
      * The choice of which students to put together is based on their grades on
      * another assignment, as recorded in table Results. Starting from the
      * highest grade on that other assignment, the top k students go into one
      * group, then the next k students go into the next, and so on. The last n %
      * k students form a smaller group.
-     * 
+     *
      * In the extreme case that there are no students, does nothing and returns
      * true.
-     * 
+     *
      * Students with no grade recorded for the other assignment come at the
      * bottom of the list, after students who received zero. When there is a tie
      * for grade (or non-grade) on the other assignment, takes students in order
      * by username, using alphabetical order from A to Z.
-     * 
+     *
      * When a group is created, its group ID is generated automatically because
      * the group_id attribute of table AssignmentGroup is of type SERIAL. The
      * value of attribute repo is repoPrefix + "/group_" + group_id
-     * 
+     *
      * Does nothing and returns false if there is no assignment with ID
      * assignmentToGroup or no assignment with ID otherAssignment, or if any
      * group has already been defined for this assignment.
-     * 
+     *
      * @param assignmentToGroup
      *            the assignment ID of the assignment for which groups are to be
      *            created
@@ -150,6 +179,12 @@ public class Assignment2 {
 
     public static void main(String[] args) {
         // You can put testing code in here. It will not affect our autotester.
+        String url = "jdbc:postgresql://localhost:5432/csc343h-chenji13";
+        String username = "chenji13";
+        String password = "";
+        connectDB(URL, username, password);
+        assignGrader(2000, "t1");
+        disconnectDB();
         System.out.println("Boo!");
     }
 }

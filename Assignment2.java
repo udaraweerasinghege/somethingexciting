@@ -243,21 +243,180 @@ public class Assignment2 {
 	 */
 	public boolean createGroups(int assignmentToGroup, int otherAssignment, String repoPrefix) {
 		// Replace this return statement with an implementation of this method!
-		return false;
+		String queryString = "SET search_path TO markus";
+		PreparedStatement pStatement;
+		try {
+			pStatement = connection.prepareStatement(queryString);
+			pStatement.execute();
+			// Check if group is at max
+			ResultSet all_students;
+			queryString = "select username from MarkusUser where type='student'";
+			PreparedStatement ps = connection.prepareStatement(queryString);
+			all_students = ps.executeQuery();
+			System.out.println("got all usernames");
+
+			ArrayList usernames_list = new ArrayList();
+
+			while (all_students.next()) {
+				String name = all_students.getString("username");
+				usernames_list.add(name);
+			}
+
+			System.out.println("all student usernames" + usernames_list);
+
+			// get group size
+			PreparedStatement ps1;
+			int group_max;
+			String qs = "SELECT group_max FROM assignment WHERE assignment_id=" + Integer.toString(assignmentToGroup);
+			ps1 = connection.prepareStatement(qs);
+			ResultSet rs1 = ps1.executeQuery();
+			if (rs1.next()) {
+				group_max = rs1.getInt("group_max");
+				System.out.println("GRUOP MAX IS " + group_max);
+			} else {
+				return false;
+			}
+
+			//get marks for groups from other assignment
+			PreparedStatement ps2;
+			String qs2 = "SELECT DISTINCT group_id, mark FROM Result WHERE group_id in (SELECT group_id from AssignmentGroup WHERE assignment_id=" +otherAssignment + ") ORDER BY mark DESC" ;
+			ps2=connection.prepareStatement(qs2);
+			ResultSet rs2 = ps2.executeQuery();
+
+			ArrayList groups_list = new ArrayList();
+			// loop highest mark to lowest
+			PreparedStatement ps3;
+			ResultSet rs3;
+			String qs3;
+
+			ArrayList seen_usernames = new ArrayList();
+			ArrayList curr_array = new ArrayList();			
+
+			while (rs2.next()) {
+				int group_id = rs2.getInt("group_id");
+				System.out.println("dis is high group id: " + group_id);
+				qs3 = "SELECT username FROM Membership where group_id=" + group_id;
+				ps3 = connection.prepareStatement(qs3);
+				rs3 = ps3.executeQuery();
+
+				// get members in current group
+				while (rs3.next()) {
+					String username = rs3.getString("username");
+					if(!seen_usernames.contains(username) && usernames_list.contains(username)) {
+						// add to an array
+						if (curr_array.size() == group_max) {
+							groups_list.add(curr_array);
+							curr_array = new ArrayList();
+							// clear curr_array
+							curr_array.add(username);
+						} else {
+							curr_array.add(username);
+						}
+						//add to seen
+						seen_usernames.add(username);
+					}
+				}
+			}
+			groups_list.add(curr_array);
+			ArrayList added_members = new ArrayList();
+			// loop through array list and make an assignment group for them, and add them to added members
+			for (ArrayList group : (ArrayList<ArrayList>)groups_list) {
+					Statement statement = connection.createStatement();
+					String insertTable = "INSERT INTO assignmentgroup " + "(assignment_id, repo) VALUES" + "(?,'repo')";
+					PreparedStatement preparedS = connection.prepareStatement(insertTable, Statement.RETURN_GENERATED_KEYS);
+					preparedS.setInt(1, assignmentToGroup);
+					preparedS.executeUpdate();
+					ResultSet keys = preparedS.getGeneratedKeys();
+					keys.next();
+					int created_group_id = keys.getInt(1);
+
+					//Update repoprefix, repoPrefix + "/group_" + group_id
+					String repoString = repoPrefix + "/group_" + created_group_id;
+					Statement statement2 = connection.createStatement();
+					String updateTable = "UPDATE assignmentgroup SET repo = ? WHERE group_id=?";
+					PreparedStatement preparedS1 = connection.prepareStatement(updateTable);
+					preparedS1.setString(1, repoString);
+					preparedS1.setInt(2, created_group_id);
+					preparedS1.executeUpdate();
+
+				for (String curr_username : (ArrayList<String>)group){
+					added_members.add(curr_username);
+					// make membership					
+					Statement statement3 = connection.createStatement();
+					String insertMember = "INSERT INTO membership Values (?,?)";
+					PreparedStatement preparedS2 = connection.prepareStatement(insertMember);
+					preparedS2.setString(1, curr_username);
+					preparedS2.setInt(2, created_group_id);
+					preparedS2.executeUpdate();
+				}
+			}
+
+
+
+			// loop thru usernames, and if they are not in added_members then make groups for them and add membership
+			int group_size = 0;
+			boolean shouldCreateGroup = true;
+			boolean firstTime = true;
+			for (String name : (ArrayList<String>)usernames_list) {
+				if (group_size == group_max) {
+					group_size = 0;
+					shouldCreateGroup = true;
+				} else {
+					shouldCreateGroup = false;
+				}
+				int created_group_id=0;
+				if((firstTime && !added_members.contains(name)) || (!added_members.contains(name) && shouldCreateGroup)) {
+					firstTime = false;
+					Statement statement = connection.createStatement();
+					String insertTable = "INSERT INTO assignmentgroup " + "(assignment_id, repo) VALUES" + "(?,'repo')";
+					PreparedStatement preparedS = connection.prepareStatement(insertTable, Statement.RETURN_GENERATED_KEYS);
+					preparedS.setInt(1, assignmentToGroup);
+					preparedS.executeUpdate();
+					ResultSet keys = preparedS.getGeneratedKeys();
+					keys.next();
+					created_group_id = keys.getInt(1);
+
+					String repoString = repoPrefix + "/group_" + created_group_id;
+					Statement statement2 = connection.createStatement();
+					String updateTable = "UPDATE assignmentgroup SET repo = ? WHERE group_id=?";
+					PreparedStatement preparedS1 = connection.prepareStatement(updateTable);
+					preparedS1.setString(1, repoString);
+					preparedS1.setInt(2, created_group_id);
+					preparedS1.executeUpdate();
+				}
+				// create membership
+				if(!added_members.contains(name)) {
+					added_members.add(name);
+					// make membership					
+					Statement statement3 = connection.createStatement();
+					String insertMember = "INSERT INTO membership Values (?,?)";
+					PreparedStatement preparedS2 = connection.prepareStatement(insertMember);
+					preparedS2.setString(1, name);
+					preparedS2.setInt(2, created_group_id);
+					preparedS2.executeUpdate();
+					group_size++;					
+				}
+			}
+			return true;
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return false;
+		}
 	}
 
 	public static void main(String[] args) throws SQLException {
 		// You can put testing code in here. It will not affect our autotester.
 		Assignment2 a2 = new Assignment2();
-		String url = "jdbc:postgresql://localhost:5432/csc343h-chenji13";
-		String username = "chenji13";
+		String url = "jdbc:postgresql://localhost:5432/csc343h-weerasi7";
+		String username = "weerasi7";
 		String password = "";
 		a2.connectDB(url, username, password);
-		a2.assignGrader(2011, "t1");
-		a2.recordMember(1002, 2007, "s5");
-	  a2.recordMember(1002, 2007, "s6");
-	  a2.recordMember(1000, 2010,"s7");
+		// a2.assignGrader(2011, "t1");
+		// a2.recordMember(1002, 2007, "s5");
+	  // a2.recordMember(1002, 2007, "s6");
+	  // a2.recordMember(1000, 2010,"s7");
+		a2.createGroups(1,2, "hello");
 		a2.disconnectDB();
-		System.out.println("Boo!");
+		// System.out.println("Boo!");
 	}
 }

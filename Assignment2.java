@@ -34,9 +34,7 @@ public class Assignment2 {
 	 * @return true if connecting is successful, false otherwise
 	 */
 	public boolean connectDB(String URL, String username, String password) {
-		// Replace this return statement with an implementation of this method!
 		try {
-			System.out.println("opened db");
 			connection = DriverManager.getConnection(URL, username, password);
 		} catch (Exception e) {
 			return false;
@@ -50,7 +48,6 @@ public class Assignment2 {
 	 * @return true if the closing was successful, false otherwise
 	 */
 	public boolean disconnectDB() {
-		// Replace this return statement with an implementation of this method!
 		try {
 			connection.close();
 		} catch (Exception e) {
@@ -95,17 +92,14 @@ public class Assignment2 {
 					preparedS.setInt(1, groupID);
 					preparedS.setString(2, grader);
 					preparedS.executeUpdate();
-					System.out.println("it worked (insert)");
 					return true;
 				}
 				if (current_grader != grader) {
-					System.out.println("grader is already assigned");
 					return false;
 				}
 
 				String grader_status = rs.getString("type");
 				if (grader_status != "TA") {
-					System.out.println("grader is not ta");
 					return false;
 				}
 			}
@@ -113,8 +107,6 @@ public class Assignment2 {
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-
-		System.out.println("group does not exist");
 		return false;
 	}
 
@@ -156,7 +148,6 @@ public class Assignment2 {
 				int curr_num_members = rs.getInt("count");
 				int max_members = rs.getInt("group_max");
 				if (max_members == curr_num_members){
-					System.out.println("already at capacity");
 					return false;
 				}
 			}
@@ -164,24 +155,19 @@ public class Assignment2 {
 			queryString = "select membership.username, membership.group_id, assignmentgroup.assignment_id, assignment.group_max from membership join assignmentgroup on assignmentgroup.group_id = membership.group_id join assignment on assignment.assignment_id = assignmentgroup.assignment_id where assignment.assignment_id = " + assignmentID + " and assignmentgroup.group_id = " + groupID;
 			PreparedStatement ps1 = connection.prepareStatement(queryString);
 			rs1 = ps1.executeQuery();
-			System.out.println("entered if assignment and group exist");
 			if (rs1.wasNull()) {
-				System.out.println("assignment or group doesn't exist");
 				return false;
 			}
 			// Check if student is valid
 			queryString = "select type from markususer where username = " + "'" + newMember + "'"; 
 			PreparedStatement ps2 = connection.prepareStatement(queryString);
 			rs2 = ps2.executeQuery();
-			System.out.println("entered if student is valid"); 
 			if (rs.next()) {
 				String member_type = rs2.getString("type");
 				if (member_type != "student"){
-					System.out.println("not a valid student");
 					return false;
 				}
 				 else {
-                                System.out.println("Student does not exist");
                                 return false;
                         }
 
@@ -192,7 +178,6 @@ public class Assignment2 {
 			preparedS.setString(1, newMember);
 			preparedS.setInt(2, groupID);
 			preparedS.executeUpdate();
-			System.out.println("it worked (insert into membership)");
 			return true;
 		} catch (SQLException e) {
 			e.printStackTrace();

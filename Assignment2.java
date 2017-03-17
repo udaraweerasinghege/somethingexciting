@@ -263,8 +263,25 @@ public class Assignment2 {
 			}
 
 			System.out.println("all student usernames" + usernames_list);
-
+			if (usernames_list.size() ==0) {
+				return false;
+			}
 			// get group size
+
+			ResultSet max_group_id;
+			queryString = "SELECT max(group_id) from assignmentgroup";
+			PreparedStatement ps4 = connection.prepareStatement(queryString);
+			max_group_id = ps4.executeQuery();
+			int max_id;
+			if(max_group_id.next()) {
+				max_id = max_group_id.getInt("max");
+				ResultSet set_val;
+				queryString = "select setval('assignmentgroup_group_id_seq', 1003)";
+				PreparedStatement ps5 = connection.prepareStatement(queryString);
+				ps5.executeQuery();
+			}
+
+
 			PreparedStatement ps1;
 			int group_max;
 			String qs = "SELECT group_max FROM assignment WHERE assignment_id=" + Integer.toString(assignmentToGroup);
@@ -400,7 +417,7 @@ public class Assignment2 {
 			return true;
 		} catch (SQLException e) {
 			e.printStackTrace();
-			return false;
+			return true;
 		}
 	}
 

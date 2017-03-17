@@ -257,9 +257,9 @@ public class Assignment2 {
 			queryString = "SELECT max(group_id) from assignmentgroup";
 			PreparedStatement ps4 = connection.prepareStatement(queryString);
 			max_group_id = ps4.executeQuery();
-			int max_id;
+			int max_id = 1;
 			if(max_group_id.next()) {
-				max_id = max_group_id.getInt("max");
+				max_id = max_group_id.getInt("max") + 1;
 				ResultSet set_val;
 				queryString = "select setval('assignmentgroup_group_id_seq', 1003)";
 				PreparedStatement ps5 = connection.prepareStatement(queryString);
@@ -324,21 +324,19 @@ public class Assignment2 {
 			// loop through array list and make an assignment group for them, and add them to added members
 			for (ArrayList group : (ArrayList<ArrayList>)groups_list) {
 					Statement statement = connection.createStatement();
-					String insertTable = "INSERT INTO assignmentgroup " + "(assignment_id, repo) VALUES" + "(?,'repo')";
-					PreparedStatement preparedS = connection.prepareStatement(insertTable, Statement.RETURN_GENERATED_KEYS);
-					preparedS.setInt(1, assignmentToGroup);
+					String insertTable = "INSERT INTO assignmentgroup " + "(group_id, assignment_id, repo) VALUES" + "(?, ?,'repo')";
+					PreparedStatement preparedS = connection.prepareStatement(insertTable);
+					preparedS.setInt(1, max_id);
+					preparedS.setInt(2, assignmentToGroup);
 					preparedS.executeUpdate();
-					ResultSet keys = preparedS.getGeneratedKeys();
-					keys.next();
-					int created_group_id = keys.getInt(1);
 
 					//Update repoprefix, repoPrefix + "/group_" + group_id
-					String repoString = repoPrefix + "/group_" + created_group_id;
+					String repoString = repoPrefix + "/group_" + max_id;
 					Statement statement2 = connection.createStatement();
 					String updateTable = "UPDATE assignmentgroup SET repo = ? WHERE group_id=?";
 					PreparedStatement preparedS1 = connection.prepareStatement(updateTable);
 					preparedS1.setString(1, repoString);
-					preparedS1.setInt(2, created_group_id);
+					preparedS1.setInt(2, max_id);
 					preparedS1.executeUpdate();
 
 				for (String curr_username : (ArrayList<String>)group){
@@ -348,9 +346,10 @@ public class Assignment2 {
 					String insertMember = "INSERT INTO membership Values (?,?)";
 					PreparedStatement preparedS2 = connection.prepareStatement(insertMember);
 					preparedS2.setString(1, curr_username);
-					preparedS2.setInt(2, created_group_id);
+					preparedS2.setInt(2, max_id);
 					preparedS2.executeUpdate();
 				}
+				max_id++;
 			}
 
 
@@ -370,20 +369,18 @@ public class Assignment2 {
 				if((firstTime && !added_members.contains(name)) || (!added_members.contains(name) && shouldCreateGroup)) {
 					firstTime = false;
 					Statement statement = connection.createStatement();
-					String insertTable = "INSERT INTO assignmentgroup " + "(assignment_id, repo) VALUES" + "(?,'repo')";
-					PreparedStatement preparedS = connection.prepareStatement(insertTable, Statement.RETURN_GENERATED_KEYS);
-					preparedS.setInt(1, assignmentToGroup);
+					String insertTable = "INSERT INTO assignmentgroup " + "(group_id, assignment_id, repo) VALUES" + "(?, ?,'repo')";
+					PreparedStatement preparedS = connection.prepareStatement(insertTable);
+					preparedS.setInt(1, max_id);
+					preparedS.setInt(2, assignmentToGroup);
 					preparedS.executeUpdate();
-					ResultSet keys = preparedS.getGeneratedKeys();
-					keys.next();
-					created_group_id = keys.getInt(1);
 
-					String repoString = repoPrefix + "/group_" + created_group_id;
+					String repoString = repoPrefix + "/group_" + max_id;
 					Statement statement2 = connection.createStatement();
 					String updateTable = "UPDATE assignmentgroup SET repo = ? WHERE group_id=?";
 					PreparedStatement preparedS1 = connection.prepareStatement(updateTable);
 					preparedS1.setString(1, repoString);
-					preparedS1.setInt(2, created_group_id);
+					preparedS1.setInt(2, max_id);
 					preparedS1.executeUpdate();
 				}
 				// create membership
@@ -394,9 +391,10 @@ public class Assignment2 {
 					String insertMember = "INSERT INTO membership Values (?,?)";
 					PreparedStatement preparedS2 = connection.prepareStatement(insertMember);
 					preparedS2.setString(1, name);
-					preparedS2.setInt(2, created_group_id);
+					preparedS2.setInt(2, max_id);
 					preparedS2.executeUpdate();
 					group_size++;					
+					max_id++;
 				}
 			}
 			return true;
